@@ -1,0 +1,119 @@
+Juton Grammar, v0.1.
+Author: Joël J. Présent (http://joeljpresent.github.io/).
+
+This grammar is written in EBNF with a few additions
+(e.g., "U+" before a code-point denotes a Unicode character).
+
+Please note that white-space is not implicit.
+
+
+=== CHARACTERS ===
+
+whitespace = U+09 | U+0a | U+0d | U+20;
+
+ws = whitespace {whitespace};
+
+lower = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | 
+        "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | 
+        "u" | "v" | "w" | "x" | "y" | "z";
+
+upper = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | 
+        "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | 
+        "U" | "V" | "W" | "X" | "Y" | "Z";
+        
+letter = lower | upper;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
+hex = "A" | "B" | "C" | "D" | "E" | "F" |
+      "a" | "b" | "c" | "d" | "e" | "f" | digit;
+
+punctuation = "!" | '"' | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" | "+" |
+              "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?" | "@" |
+              "[" | "\" | "]" | "^" | "_" | "`" | "{" | "|" | "}" | "~";
+
+alnum = letter | digit;
+
+ascii = alnum | punctuation;
+
+
+=== NUMBERS ===
+
+int = digit, {digit};
+
+sign = "" | "+" | "-";
+
+decimal = int, ".", int;
+
+scientific = (int | decimal), "e", sign, int;
+
+number = int | decimal | scientific;
+
+
+=== STRING ===
+
+string_safe = ascii - ('"', "\");
+
+escape = "\\" | '\"' | "\b" | "\f" | "\n" | "\r" | "\t"
+       | "\x", hex, hex
+       | "\u", hex, hex, hex, hex
+       | "\U", hex, hex, hex, hex, hex, hex, hex, hex;
+
+string = '"', {string_safe | escape}, '"';
+
+
+=== IDENTIFIERS ===
+
+word = (letter | "_"), {alnum | "_"};
+
+user_type = upper, {alnum | "_"};
+
+
+=== INTERVAL ===
+
+squared_bracket = "[" | "]";
+
+interval = squared_bracket, [number], ",", [ws], [number], squared_bracket;
+
+
+=== REGEX ===
+
+regex_middle = ascii - ("(" | ")" | "\"), regex_middle
+             | "\", ascii, regex_middle
+             | "(", regex_middle, ")", regex_middle
+             | "";
+
+regex = "(", regex_middle, ")";
+
+
+=== TYPE ===
+
+number_in = word, ws, "in", ws, interval;
+
+string_is = word, ws, "is", ws, regex;
+
+single_type = word | number_in | string_is | number | string;
+
+parenthesized_type = "(", [ws], type, [ws], ")";
+
+encapsulated_type = single_type | parenthesized_type;
+
+array_type = encapsulated_type, "[", int, [",", [ws], int], "]";
+
+generic = word, "<", word, ">";
+
+generic_type = word, "<", type, ">";
+
+array = "[", [ws], [types], [ws], "]";
+
+object = "{", [ws], [type_declarations], [ws], "}";
+
+type = encapsulated_type | array_type | array | object | generic_type
+     | type, [ws], "&", [ws], type
+     | type, [ws], "|", [ws], type;
+
+types = {type, ",", [ws]}, type;
+
+type_declaration = word | generic, ["?"], [ws], ":", [ws], type, [ws], ";";
+
+type_declarations = {type_declaration, ",", [ws]}, type_declaration;
